@@ -16,7 +16,7 @@ TARGET	:= cpu_sort
 ######################################################################
 # Build
 COBJS	:=
-COBJS	+= cpu_sort.o mmc.o usb.o cpu_test.o gpio.o mem_test.o dvfs_test.o
+COBJS	+= cpu_sort.o mmc.o usb.o cpu_test.o gpio.o mem_test.o dvfs_test.o burn_test.o
 
 CPPOBJS	:=
 

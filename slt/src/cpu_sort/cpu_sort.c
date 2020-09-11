@@ -36,6 +36,7 @@
 #define TEST_USB 	1
 #define TEST_CPU 	1
 #define TEST_MEM 	1
+#define TEST_BURN 	1
 #define TEST_DVFS	1
 
 #define	NUM_OF_CORE	4
@@ -67,6 +68,8 @@ extern int mem_stop(void);
 
 extern int dvfs_test_run(void);
 extern int dvfs_stop(void);
+extern int burn_stop(void);
+extern int select_dvfs;
 
 void print_usage(void)
 {
@@ -84,17 +87,24 @@ static uint64_t get_tick_count( void )
 	return ret;
 }
 
+int once = 0;
+int cpuburn_started = 0;
+
 int main(int argc, char **argv)
 {
 	int opt, ret = 0;
 	uint64_t end, start;
-	uint64_t testTime = 20 * 1000000;	/* 20 Sec */
+	uint64_t testTime = 30 * 1000000;	/* 30 Sec */
 
 	while(-1 != (opt = getopt(argc, argv, "hp:d:s:"))) {
 		switch(opt) {
 		 	 case 'h':   print_usage(); 	exit(0);
 		}
 	}
+
+
+	select_dvfs = 1;
+    cpuburn_started = 0;
 	printf("TEST START \n");
 	start = get_tick_count();
 
@@ -170,11 +180,38 @@ int main(int argc, char **argv)
 			break;
 		}
 #endif
+#if (TEST_BURN)
+		if( cpuburn_started == 1)
+		{
+			if( SLT_RES_ERR == burn_status()) {
+				printf("mem test err \n");
+				ret = -1;
+				break;
+			}
+		}
+#endif
 
 		end = get_tick_count();
 		if( (end - start) > testTime )
 			break;
 		usleep( 1000000 );
+		if( (end - start) > 20000000 )
+		{
+            if ( once == 0 )
+            {
+#if (TEST_BURN)
+				ret = burn_test_run();
+				if (ret < 0) {
+					printf("burn test fail\n");
+					ret = -1;
+					goto out;
+				}
+                cpuburn_started = 1;
+#endif
+                select_dvfs = 0;
+                once = 1;
+            }
+		}
 	}
 
 #if (TEST_MMC)
@@ -193,6 +230,9 @@ int main(int argc, char **argv)
 #if (TEST_DVFS)
 	dvfs_stop();
 #endif
+#if (TEST_BURN)
+    burn_stop();
+#endif
 
 	if (!ret) {
 		printf("\n\e[32m============================\e[0m\n");
@@ -203,6 +243,7 @@ int main(int argc, char **argv)
 		printf("\e[31m TEST FAIL \e[0m\n");
 		printf("\e[31m============================\e[0m\n");
 	}
+
 
 out:
 	return ret;
