@@ -5,7 +5,8 @@
 #define DOWN_FREQ	400000
 #define DOWN_VOL	1075000
 
-#define MARGIN_VOL	75000
+#define MARGIN_VOL_PREV	75000
+#define MARGIN_VOL	12500
 
 #define CPUFREQ_PATH	"/sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed"
 #define REGULATOR_PATH	"/sys/class/regulator/regulator"
@@ -20,6 +21,7 @@
 
 pthread_t	dvfs_mthread;
 int		dvfs_exit_thread;
+int		select_dvfs = 0;
 
 /*
  *	sys APIs
@@ -102,12 +104,24 @@ static void *dvfs_test_thread(int id)
 {
 	int md_voltage = MARGIN_VOL;
 	while (!dvfs_exit_thread) {
-		set_cpu_voltage(1, UP_VOL - MARGIN_VOL);
-		set_cpu_speed(1400000);
-		usleep(100000);
-		set_cpu_speed(800000);
-		set_cpu_voltage(1, DOWN_VOL - MARGIN_VOL);
-		usleep(100000);
+		if( select_dvfs == 0 )
+		{
+			set_cpu_voltage(1, UP_VOL - MARGIN_VOL);
+			set_cpu_speed(1400000);
+			usleep(120000);
+			set_cpu_speed(800000);
+			set_cpu_voltage(1, DOWN_VOL - MARGIN_VOL);
+			usleep(10000);
+		}
+		else
+		{
+			set_cpu_voltage(1, UP_VOL - MARGIN_VOL_PREV - MARGIN_VOL);
+			set_cpu_speed(1400000);
+			usleep(100000);
+			set_cpu_speed(800000);
+			set_cpu_voltage(1, DOWN_VOL - MARGIN_VOL_PREV);
+			usleep(100000);
+		}
 	}
 
 }
