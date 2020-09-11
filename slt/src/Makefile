@@ -3,6 +3,7 @@
 SUB_DIRS	+= main
 SUB_DIRS	+= memtester
 SUB_DIRS	+= cpu_sort
+SUB_DIRS	+= cpuburn
 
 all: compile_subdirs
 

@@ -48,6 +48,9 @@ LIBRARY		:=
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDE) -c -o $@ $<
 
+%.o: %.S
+	$(CC) $(CFLAGS) $(INCLUDE) -c -o $@ $<
+
 %.o: %.cpp
 	$(CPP) $(CFLAGS) $(INCLUDE) -c -o $@ $<
 
