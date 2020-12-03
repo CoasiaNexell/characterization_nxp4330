@@ -234,6 +234,13 @@ int main(int argc, char **argv)
     burn_stop();
 #endif
 
+	ret = enable_otg_host();
+	if (ret < 0) {
+		printf("usb otg test fail\n");
+		ret = -1;
+		goto out;
+	}
+
 	if (!ret) {
 		printf("\n\e[32m============================\e[0m\n");
 		printf("\e[32m TEST OK \e[0m\n");

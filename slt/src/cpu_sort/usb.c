@@ -2,6 +2,7 @@
 
 #define DEVICE_PATH	"/mnt/usb/"
 #define USB_DEVICE	"/dev/sda1"
+#define OTG_DEVICE	"/dev/sdb1"
 #define DEBUG	0
 
 #if (DEBUG)
@@ -44,6 +45,40 @@ int enable_host(int pwr)
 	return -1;
 
 }
+
+int enable_otg_host(void)
+{
+	int otg_loop_pwr = 19;
+	int otg_host_test = 20;
+	int cnt = 500;
+
+	if(gpio_export(otg_loop_pwr))
+	{
+		printf("gpio open fail\n");
+		return -1;
+	}
+	gpio_dir_out(otg_loop_pwr);
+	gpio_set_value(otg_loop_pwr, 1);
+
+	if(gpio_export(otg_host_test))
+	{
+		printf("gpio open fail2\n");
+		return -1;
+	}
+	gpio_dir_out(otg_host_test);
+	gpio_set_value(otg_host_test, 1);
+
+	while(cnt--)
+	{
+		usleep(10000);
+		if (!access(OTG_DEVICE, F_OK))
+			return 0;
+	}
+	return -1;
+
+}
+
+
 static int usb_rw_test(unsigned char *w, unsigned char *r, int size, int index )
 {
 	int ret;
