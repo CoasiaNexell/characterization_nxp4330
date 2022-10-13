@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <sys/time.h>	//	gettimeofday
 
 #include "asv_type.h"
@@ -14,8 +15,8 @@
 typedef struct
 {
 	VID_TYPE_E				eCodec;
-	int8_t                 	chInputName[256];
-	int8_t					chRefName[256];
+	char                 	chInputName[256];
+	char					chRefName[256];
 } VIDEO_TEST_LIST;
 
 typedef struct
@@ -178,9 +179,9 @@ static uint32_t ReadOneFrame ( STREAM *pstStrm, VID_TYPE_E eCodec, int32_t iFrmN
 ASV_RESULT ASV_Video_Run(void)
 {
 	int32_t				iTestCnt = 0, iFrmCnt;
-	uint32_t 			uSize, uTmp;
+	uint32_t 			uSize/*, uTmp*/;
 	STREAM   			stStrm;
-	VID_ERROR_E 		eRet;
+//	VID_ERROR_E 		eRet;
 
 	NX_VID_ENC_IN		stEncIn;
 	NX_VID_ENC_OUT		stEncOut;
@@ -343,7 +344,7 @@ ASV_RESULT ASV_Video_Run(void)
 		}
 
 		{
-			void    *pvSrc = (void *)(( hEnc ) ? ( stEncOut.outBuf ) : ( stDecOut.outImg.luVirAddr ));
+			void    *pvSrc = ( hEnc ) ? ((void*)stEncOut.outBuf ) : ( (void*)stDecOut.outImg.luVirAddr );
 
 			int32_t iFileSize = ES_MEM_SIZE;
 			FILE    *fpRef = fopen(stVidTestList[iTestCnt].chRefName, "rb");
@@ -365,7 +366,7 @@ ASV_RESULT ASV_Video_Run(void)
 			}
 			else
 			{
-				int32_t i, j;
+				int32_t i, j=0;
 				uint8_t *pbyDst = (uint8_t *)stStrm.pbyStreamOrg;
 				uint8_t *pbySrc = (uint8_t *)pvSrc;
 
@@ -406,6 +407,7 @@ ASV_RESULT ASV_Video_Run(void)
 	if ( hEnc ) NX_VidEncClose( hEnc );
 	if ( hDec ) NX_VidDecClose( hDec );
 	if ( stStrm.fpStream ) fclose(stStrm.fpStream);
+
 	free( stStrm.pbyStreamOrg );
 
 	if ( iTestCnt < TEST_CASE_NUM )
@@ -454,7 +456,7 @@ int32_t main( int32_t argc, char *argv[] )
 {
 	ASV_TEST_MODULE *test = GetVpuTestModule();
 	ASV_RESULT res;
-	uint32_t count = 10;
+//	uint32_t count = 10;
 	uint64_t startTime, endTime;
 
 	startTime = NX_GetTickCount();
