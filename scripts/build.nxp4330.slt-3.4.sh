@@ -54,8 +54,8 @@ MAKE_ROOTIMG="mkdir -p $RESULT/root; \
 
 MAKE_DISK="$MAKE_DISK_IMG -f $PARTMAP -s 1 -r 0"
 
-SLT_COPY="cp ./characterization/slt/script/S60test result/rootfs/etc/init.d/"
-
+SLT_COPY="cp ./characterization/slt/script/S60test result/rootfs/etc/init.d/;\
+	cp -av ./characterization/slt/lib/* result/rootfs/usr/lib/"
 
 # Build Targets
 BUILD_IMAGES=(
