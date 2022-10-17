@@ -16,13 +16,18 @@ LIBRARY += -lnxvpu -lnxvmem -lnxvidrc -lion
 ######################################################################
 # Target
 COBJS	:= asv_video_test.o
-CPPOBJS	:=  
+CPPOBJS	:=
 
 CFLAGS	+= -g
 
-LIBNAME	:= libasv_vpu
+#LIBNAME	:= libasv_vpu
 #TARGET	:= asv_vpu
-TARGET	:= asb_vpu
+
+#LIBNAME	:= libasb_vpu
+#TARGET	:= asb_vpu
+
+LIBNAME	:= libslt_vpu
+TARGET	:= slt_vpu
 
 ######################################################################
 # Build
@@ -34,6 +39,7 @@ $(TARGET):	depend $(OBJS)
 #	$(AR) $(ARFLAGS) $(LIBNAME).a $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LIBRARY)
 	cp $(TARGET) $(TOPDIR)/bin
+	cp lib/libnxvidrc.so $(TOPDIR)/lib
 
 clean:
 	rm -f $(TARGET) *.o .depend

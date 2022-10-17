@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <sys/time.h>	//	gettimeofday
 
 #include "asv_type.h"
@@ -11,6 +12,8 @@
 #define ES_MEM_SIZE 	(4*1024*1024)
 #define TEST_CASE_NUM	1
 
+#define DUMP_FILENAME 	"/mnt/mmc1/goldendump.bin"
+static int gst_bDump = 0;
 
 typedef struct
 {
@@ -29,7 +32,7 @@ typedef struct
 	uint32_t				uTotalSize;
 } STREAM;
 
-
+#if 0 // ASB
 VIDEO_TEST_LIST stVidTestList[] =
 {
 	{ NX_AVC_DEC, "/mnt/mmc0/video/stockholm_ter_1080i_29-97fps_50Mbps_hp.264", "/mnt/mmc0/video/enc.264"},
@@ -38,11 +41,107 @@ VIDEO_TEST_LIST stVidTestList[] =
 	{ NX_MP4_DEC, "/mnt/mmc0/video/stockholm_ter_1080i_29-97fps_40000kbps.m4v", "/mnt/mmc0/video/enc.m4v"},
 	{ NX_RV_DEC,  "/mnt/mmc0/video/fm_15f_64kbps_150_QCIF_IPBP.rmes",           "/mnt/mmc0/video/rv9_dec.yuv"},
 };
+#endif
+
+// SLT Vector
+VIDEO_TEST_LIST stVidTestList[] =
+{
+	{ NX_MP4_DEC, "/mnt/mmc1/zhonghong_error.m4v", "/mnt/mmc1/zhonghong_golden.m4v"},
+};
 
 static ASV_RESULT 			eCurStatus;
 static NX_VID_ENC_HANDLE	hEnc = NULL;
 static NX_VID_DEC_HANDLE 	hDec = NULL;
 
+static void HexDump( const void *data, int32_t size )
+{
+	int32_t i=0, offset = 0;
+	char tmp[32];
+	static char lineBuf[1024];
+	const uint8_t *_data = (const uint8_t*)data;
+	while( offset < size )
+	{
+		sprintf( lineBuf, "%08lx :  ", (unsigned long)offset );
+		for( i=0 ; i<16 ; ++i )
+		{
+			if( i == 8 ){
+				strcat( lineBuf, " " );
+			}
+			if( offset+i >= size )
+			{
+				strcat( lineBuf, "   " );
+			}
+			else{
+				sprintf(tmp, "%02x ", _data[offset+i]);
+				strcat( lineBuf, tmp );
+			}
+		}
+		strcat( lineBuf, "   " );
+
+		//     Add ACSII A~Z, & Number & String
+		for( i=0 ; i<16 ; ++i )
+		{
+			if( offset+i >= size )
+			{
+				break;
+			}
+			else{
+				if( isprint(_data[offset+i]) )
+				{
+					sprintf(tmp, "%c", _data[offset+i]);
+					strcat(lineBuf, tmp);
+				}
+				else
+				{
+					strcat( lineBuf, "." );
+				}
+			}
+		}
+
+		strcat(lineBuf, "\n");
+		printf( "%s", lineBuf );
+		offset += 16;
+	}
+}
+
+static void image_dump( NX_VID_MEMORY_INFO *memInfo, const char *filename )
+{
+	int i;
+	uint8_t *buf;
+	int width = memInfo->imgWidth;
+	int height = memInfo->imgHeight;
+	FILE *fpDump = fopen(DUMP_FILENAME, "wb");
+	if( fpDump )
+	{
+		// Dump Y
+		buf = (uint8_t*)memInfo->luVirAddr;
+		for( i=0; i < height ; i++ )
+		{
+			fwrite( buf, 1, width, fpDump );
+			buf += memInfo->luStride;
+		}
+		// Dump U
+		buf = (uint8_t*)memInfo->luVirAddr;
+		for( i=0; i < height ; i++ )
+		{
+			fwrite( buf, 1, width, fpDump );
+			buf += memInfo->luStride;
+		}
+		// Dump V
+		buf = (uint8_t*)memInfo->luVirAddr;
+		for( i=0; i < height ; i++ )
+		{
+			fwrite( buf, 1, width, fpDump );
+			buf += memInfo->luStride;
+		}
+
+		fwrite( (void*)memInfo->luVirAddr, 1, width * height, fpDump );
+		fwrite( (void*)memInfo->cbVirAddr, 1, width * height / 4, fpDump );
+		fwrite( (void*)memInfo->crVirAddr, 1, width * height / 4, fpDump );
+		fclose(fpDump);
+		printf("Golden Dump Done(%s)\n", DUMP_FILENAME);
+	}
+}
 
 static uint64_t NX_GetTickCount( void )
 {
@@ -179,9 +278,8 @@ static uint32_t ReadOneFrame ( STREAM *pstStrm, VID_TYPE_E eCodec, int32_t iFrmN
 ASV_RESULT ASV_Video_Run(void)
 {
 	int32_t				iTestCnt = 0, iFrmCnt;
-	uint32_t 			uSize/*, uTmp*/;
+	uint32_t 			uSize;
 	STREAM   			stStrm;
-//	VID_ERROR_E 		eRet;
 
 	NX_VID_ENC_IN		stEncIn;
 	NX_VID_ENC_OUT		stEncOut;
@@ -227,9 +325,12 @@ ASV_RESULT ASV_Video_Run(void)
 			stSeqIn.seqInfo = stStrm.pbyStream;
 			stSeqIn.seqSize = uSize;
 
+			printf("uSize = %d\n", uSize);
+
 			if ( NX_VidDecInit(hDec, &stSeqIn, &stSeqOut) != VID_ERR_NONE )
 			{
 				printf("NX_VidDecInit() failed!!!\n");
+				HexDump(stStrm.pbyStream, uSize);
 				break;
 			}
 
@@ -282,8 +383,8 @@ ASV_RESULT ASV_Video_Run(void)
 				break;
 			}
 
-			//printf("[%3d]Size = %8d(%5x), Addr = %8x (%2x %2x %2x %2x %2x), Idx = %3d %3d, Reliable = %3d \n",
-			//	iFrmCnt, stDecIn.strmSize, stDecIn.strmSize, stDecIn.strmBuf, stDecIn.strmBuf[0], stDecIn.strmBuf[1], stDecIn.strmBuf[2], stDecIn.strmBuf[3], stDecIn.strmBuf[4], stDecOut.outImgIdx, stDecOut.outDecIdx, stDecOut.outFrmReliable_0_100);
+			// printf("[%3d]Size = %8d(%5x), Addr = %8x (%2x %2x %2x %2x %2x), Idx = %3d %3d, Reliable = %3d \n",
+			// 	iFrmCnt, stDecIn.strmSize, stDecIn.strmSize, stDecIn.strmBuf, stDecIn.strmBuf[0], stDecIn.strmBuf[1], stDecIn.strmBuf[2], stDecIn.strmBuf[3], stDecIn.strmBuf[4], stDecOut.outImgIdx, stDecOut.outDecIdx, stDecOut.outFrmReliable_0_100);
 
 			if ( stVidTestList[iTestCnt].eCodec == NX_RV_DEC && iFrmCnt > 10 )
 				stStrm.pbyStreamEnd = stStrm.pbyStream;
@@ -300,11 +401,6 @@ ASV_RESULT ASV_Video_Run(void)
 						break;
 					}
 				}
-
-				//fwrite( stDecOut.outImg.luVirAddr, 1, stDecOut.width * stDecOut.height, fpOut );
-				//fwrite( stDecOut.outImg.cbVirAddr, 1, stDecOut.width * stDecOut.height / 4, fpOut );
-				//fwrite( stDecOut.outImg.crVirAddr, 1, stDecOut.width * stDecOut.height / 4, fpOut );
-
 				NX_VidDecClrDspFlag( hDec, &stDecOut.outImg, stDecOut.outImgIdx );
 			}
 			else if ( stDecOut.outDecIdx < 0 && stDecIn.eos == 1 )
@@ -356,6 +452,20 @@ ASV_RESULT ASV_Video_Run(void)
 			iFileSize = fread(stStrm.pbyStreamOrg, 1, iFileSize, fpRef);
 			fclose(fpRef);
 
+#define DUMP_FILENAME 	"/mnt/mmc1/goldendump.bin"
+
+#if (DUMP_GOLDEN)
+			//	Dump Encoded Stream
+			{
+				if( hEnc ) {
+					FILE *fpDump = fopen(DUMP_FILENAME, "wb");
+					if(fpDump) {
+						fwrite( stEncOut.outBuf, 1, stEncOut.bufSize, fpDump );
+						fclose(fpDump);
+					}
+				}
+			}
+#endif // DUMP_GOLDEN
 			if ( (hEnc != NULL) || (stDecOut.outImg.luStride == stDecOut.width) )
 			{
 				if (memcmp( pvSrc, (void *)stStrm.pbyStreamOrg, iFileSize) != 0)
@@ -450,14 +560,15 @@ ASV_TEST_MODULE *GetVpuTestModule(void)
 	return &mASV;
 }
 
-#if 1
-
 int32_t main( int32_t argc, char *argv[] )
 {
 	ASV_TEST_MODULE *test = GetVpuTestModule();
 	ASV_RESULT res;
-//	uint32_t count = 10;
 	uint64_t startTime, endTime;
+	if( argc > 1 )
+	{
+		
+	}
 
 	startTime = NX_GetTickCount();
 	res = test->run();
@@ -479,5 +590,3 @@ int32_t main( int32_t argc, char *argv[] )
 
 	return res;
 }
-
-#endif
