@@ -4,6 +4,7 @@ SUB_DIRS	+= main
 SUB_DIRS	+= memtester
 SUB_DIRS	+= cpu_sort
 SUB_DIRS	+= cpuburn
+SUB_DIRS	+= vpu_test
 
 all: compile_subdirs
 
