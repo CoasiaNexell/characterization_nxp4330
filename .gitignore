@@ -1,2 +1,3 @@
 .depend
 *.o
+slt/src/vpu_test/slt_vpu
