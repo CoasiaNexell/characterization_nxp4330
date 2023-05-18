@@ -104,6 +104,7 @@ enum {
 static TEST_ITEM_INFO gTestItems[] =
 {
 	{ BIN_CPU_SORT    , "/usr/local/cpu_sort",		"CHIP Sorting   ", "",                            1, 0 },
+	{ BIN_VPU         , "/usr/local/slt_vpu",		"VPU Test       ", "",                            1, 0 },
 };
 
 
