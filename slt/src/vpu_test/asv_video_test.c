@@ -380,6 +380,7 @@ ASV_RESULT ASV_Video_Run(void)
 			if (NX_VidDecDecodeFrame( hDec, &stDecIn, &stDecOut ) != VID_ERR_NONE)
 			{
 				printf("NX_VidDecDecodeFrame() failed \n");
+				eCurStatus = ASV_RES_ERR;
 				break;
 			}
 
@@ -398,6 +399,7 @@ ASV_RESULT ASV_Video_Run(void)
 					if (NX_VidEncEncodeFrame( hEnc, &stEncIn, &stEncOut ) != VID_ERR_NONE)
 					{
 						printf("NX_VidEncEncodeFrame() failed \n");
+						eCurStatus = ASV_RES_ERR;
 						break;
 					}
 				}
@@ -408,6 +410,9 @@ ASV_RESULT ASV_Video_Run(void)
 
 			iFrmCnt++;
 		} while(1);
+
+		if( eCurStatus == ASV_RES_ERR )
+			return ASV_RES_ERR;
 
 		if ( stVidTestList[iTestCnt].eCodec == NX_VC1_DEC )
 		{
@@ -451,8 +456,6 @@ ASV_RESULT ASV_Video_Run(void)
 			}
 			iFileSize = fread(stStrm.pbyStreamOrg, 1, iFileSize, fpRef);
 			fclose(fpRef);
-
-#define DUMP_FILENAME 	"/mnt/mmc1/goldendump.bin"
 
 #if (DUMP_GOLDEN)
 			//	Dump Encoded Stream
@@ -565,10 +568,9 @@ int32_t main( int32_t argc, char *argv[] )
 	ASV_TEST_MODULE *test = GetVpuTestModule();
 	ASV_RESULT res;
 	uint64_t startTime, endTime;
-	if( argc > 1 )
-	{
-		
-	}
+
+	printf("Change core voltage to 1.15v\n");
+	system("echo 1150000 > /sys/class/regulator/regulator.2/microvolts");
 
 	startTime = NX_GetTickCount();
 	res = test->run();
