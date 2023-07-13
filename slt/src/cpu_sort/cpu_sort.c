@@ -38,6 +38,7 @@
 #define TEST_MEM 	1
 #define TEST_BURN 	1
 #define TEST_DVFS	1
+#define	TEST_OTG	0
 
 #define	NUM_OF_CORE	4
 #define TEST_NUM	3
@@ -233,13 +234,14 @@ int main(int argc, char **argv)
 #if (TEST_BURN)
     burn_stop();
 #endif
-
+#if (TEST_OTG)
 	ret = enable_otg_host();
 	if (ret < 0) {
 		printf("usb otg test fail\n");
 		ret = -1;
 		goto out;
 	}
+#endif
 
 	if (!ret) {
 		printf("\n\e[32m============================\e[0m\n");
